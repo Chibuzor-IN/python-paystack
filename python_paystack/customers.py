@@ -27,7 +27,7 @@ class Customer():
             raise InvalidEmailError
 
     @classmethod
-    def fromJSON(self, data, pickled = True):
+    def fromJSON(self, data, pickled = False):
         if pickled : 
             customer = jsonpickle.decode(data)
             if type(customer) is Customer:
