@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name = 'python_paystack',
-      version = 0.3,
+      version = 0.4,
       description = 'A Paystack API wrapper',
       url = '',
       author = 'Nwalor Chibuzor',

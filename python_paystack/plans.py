@@ -1,5 +1,5 @@
 from forex_python.converter import CurrencyCodes
-from errors import *
+from .errors import *
 import jsonpickle
 
 class Plan():

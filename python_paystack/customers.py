@@ -1,6 +1,6 @@
 import jsonpickle
 import validators
-from errors import *
+from .errors import *
 
 class Customer():
     '''

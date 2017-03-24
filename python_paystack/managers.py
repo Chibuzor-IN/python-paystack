@@ -1,11 +1,11 @@
-from paystack_config import *
-from errors import *
+from .paystack_config import *
+from .errors import *
 import requests
 import json
 import jsonpickle
 import validators
 import math
-from plans import Plan
+from .plans import Plan
 
 
 class Manager():
