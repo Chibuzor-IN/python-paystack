@@ -270,7 +270,7 @@ class CustomersManager(Manager):
         super().__init__(self)
         self.__endpoint = endpoint
 
-    def create_customer(self, email, first_name = '', last_name = '', meta = {}):
+    def create_customer(self, customer : Customer, meta = {}):
         '''
         Method for creating a new customer.
 
@@ -281,14 +281,17 @@ class CustomersManager(Manager):
         meta : Dict which can contain additional customer information
         '''
 
-        if validators.email(email):
-            data = {'email' : email}
+        if not type(customer) is Customer:
+            raise TypeError("customer argument should be an instance of the Customer class")
+
+        if validators.email(customer.email):
+            data = {'email' : customer.email}
 
             if first_name:
-                data['first_name'] = first_name
+                data['first_name'] = customer.first_name
 
             if last_name:
-                data['last_name'] = last_name
+                data['last_name'] = customer.last_name
 
             if meta:
                 data['metadata'] = meta
@@ -356,7 +359,8 @@ class CustomersManager(Manager):
         status, message = self.get_content_status(content)
 
         if status :
-            return content['data']
+            customer = Customer.fromJSON(content['data'])
+            return customer
         else:
             raise APIConnectionFailedError(message)
     def update_customer(self, id, data):
@@ -438,7 +442,8 @@ class CustomersManager(Manager):
             raise APIConnectionFailedError(message)
 
 
-#Rewrite PlanManager to use Plan class
+
+
 class PlanManager(Manager):
     '''   
     Plan Manager class
