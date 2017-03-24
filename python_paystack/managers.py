@@ -135,6 +135,14 @@ class PaymentManager(Manager):
     def authorization_url(self):
         return self.__authorization_url
 
+    @property
+    def reference(self):
+        return self.__reference
+
+    @property
+    def access_code(self):
+        return self.access_code
+
     def full_transaction_cost(self, locale):
         '''
         Adds on paystack transaction charges and returns updated cost
