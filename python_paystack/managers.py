@@ -1,5 +1,6 @@
 from .paystack_config import *
 from .errors import *
+from .customers import Customer
 import requests
 import json
 import jsonpickle
