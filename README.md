@@ -37,7 +37,7 @@ payment_manager.start_transaction()
 #Starts a transaction and returns a paystack url
 
 #Payments can be verified using their reference
-payent_manager.verify_transaction(payment_manager.reference)
+payment_manager.verify_transaction(payment_manager.reference)
 
 ``` 
 
