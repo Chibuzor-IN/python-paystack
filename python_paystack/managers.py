@@ -536,7 +536,7 @@ class TransactionsManager(Manager):
 
     def charge_authorization(self, authorization_code, amount, email, plan_code = None):
         data = {'authorization_code' : authorization_code}
-        if plan:
+        if plan_code:
             data['plan'] = plan_code
 
         try:

@@ -14,7 +14,7 @@ class Customer():
     first_name = None
     last_name = None
     id = None
-    
+
     def __init__(self, email, first_name = None, last_name = None, phone = None, risk_action = None, id = None):
         if validators.email(email):
             self.email = email
@@ -46,3 +46,10 @@ class Customer():
 
     def toJSON(self):
         return jsonpickle.encode(self)
+
+
+    def __str__(self):
+        value = self.email
+        if self.first_name:
+            value += ' %s' % (self.first_name)
+        return value
