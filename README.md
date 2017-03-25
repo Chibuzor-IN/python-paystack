@@ -44,6 +44,7 @@ payent_manager.verify_transaction(payment_manager.reference)
 # Customers
 
 **Registering a customer with paystack**
+
 A customer can be registered using the CustomersManager.create_customer method which accepts a Customer object as an argument.
 All the customer information to be sent to paystack is taken from the Customer object.
 Misc. data can also be sent using the meta argument.
