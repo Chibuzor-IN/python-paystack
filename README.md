@@ -30,7 +30,7 @@ Charging customers with an existing authorization is handled by the Transactions
 
 # Payments
 
-# Starting and verifying a transaction
+**Starting and verifying a transaction**
 ```python
 payment_manager = PaymentManager(20000, 'test@email.com')
 payment_manager.start_transaction()
@@ -43,7 +43,7 @@ payent_manager.verify_transaction(payment_manager.reference)
 
 # Customers
 
-# Registering a customer with paystack
+**Registering a customer with paystack**
 A customer can be registered using the CustomersManager.create_customer method which accepts a Customer object as an argument.
 All the customer information to be sent to paystack is taken from the Customer object.
 Misc. data can also be sent using the meta argument.
@@ -53,7 +53,7 @@ customer_manager = CustomersManager()
 customer_manager.create_customer(customer)
 ```
 
-# Getting existing customers
+**Getting existing customers**
 ```python
 customer_manager = CustomersManager()
 customer_manager.get_customers() #Returns a list containing every customer
