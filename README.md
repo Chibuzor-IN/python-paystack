@@ -28,7 +28,9 @@ When PaymentManager.start_transaction is called, it returns a paystack url which
 After a transaction is confirmed, the details are saved as member variables of the PaymentManager object . 
 Charging customers with an existing authorization is handled by the TransactionsManager.
 
-# Starting a Transaction
+# Payments
+
+# Starting and verifying a transaction
 ```python
 payment_manager = PaymentManager(20000, 'test@email.com')
 payment_manager.start_transaction()
@@ -38,4 +40,29 @@ payment_manager.start_transaction()
 payent_manager.verify_transaction(payment_manager.reference)
 
 ``` 
+
+# Customers
+
+# Registering a customer with paystack
+A customer can be registered using the CustomersManager.create_customer method which accepts a Customer object as an argument.
+All the customer information to be sent to paystack is taken from the Customer object.
+Misc. data can also be sent using the meta argument.
+```python
+customer = Customer('test@email.com')
+customer_manager = CustomersManager()
+customer_manager.create_customer(customer)
+```
+
+# Getting existing customers
+```python
+customer_manager = CustomersManager()
+customer_manager.get_customers() #Returns a list containing every customer
+
+customer_manager.get_customer(id) #Returns customer with the specified id
+```
+
+
+# TODO : 
+
+Tests
 
