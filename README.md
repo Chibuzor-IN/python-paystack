@@ -1,6 +1,6 @@
 # python-paystack
 
-Python API wrapper for paystack
+Python API wrapper for paystack ( paystack.com )
 
 # Installation
 
