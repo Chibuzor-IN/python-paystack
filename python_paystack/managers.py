@@ -577,7 +577,7 @@ class TransactionsManager(Manager):
         status, message = self.get_content_status(content)
 
         if status:
-            return content['status']
+            return content['data']
         else:
             raise APIConnectionFailedError(message)
 
@@ -595,7 +595,7 @@ class TransactionsManager(Manager):
         status, message = self.get_content_status(content)
 
         if status:
-            return content['status']
+            return content['data']
         else:
             raise APIConnectionFailedError(message)
 
@@ -615,6 +615,6 @@ class TransactionsManager(Manager):
         status, message = self.get_content_status(content)
 
         if status:
-            return content['status']
+            return content['data']
         else:
             raise APIConnectionFailedError(message)
