@@ -35,7 +35,9 @@ class Filter():
 
     @staticmethod
     def filter_amount(amount_range : range, dataset, amount_key = 'amount'):
-        
+        '''
+        Checks if there is an amount in the amount_range given in the dataset        
+        '''
         if type(dataset) is not dict : 
                 raise TypeError("dataset argument should be a dictionary")
 

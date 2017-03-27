@@ -627,7 +627,9 @@ class TransactionsManager(Manager):
 
     
     def filter_transactions(self, amount_range : range, transactions):
-        
+        '''
+        Returns all transactions with amounts in the given amount_range
+        '''
         results = []
         for transaction in transactions:
             if Filter.filter_amount(amount_range, transaction):
