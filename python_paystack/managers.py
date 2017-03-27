@@ -14,8 +14,8 @@ class Manager():
     Abstract base class for 'Manager' Classes
     '''
 
-    PAYSTACK_URL = PaystackConfig.PAYSTACK_URL
-    SECRET_KEY = PaystackConfig.SECRET_KEY
+    PAYSTACK_URL = ""
+    SECRET_KEY = ""
 
     decoder = json.JSONDecoder()
 
@@ -25,6 +25,9 @@ class Manager():
 
         if not PaystackConfig.SECRET_KEY or not PaystackConfig.PUBLIC_KEY:
             raise ValueError("No secret key or public key found, assign values using PaystackConfig.SECRET_KEY = SECRET_KEY and PaystackConfig.PUBLIC_KEY = PUBLIC_KEY")
+
+        self.PAYSTACK_URL = PaystackConfig.PAYSTACK_URL
+        self.SECRET_KEY = PaystackConfig.SECRET_KEY
 
 
     def get_content_status(self, content):
@@ -66,7 +69,7 @@ class Manager():
                       }
 
         data = json.dumps(data)
-
+        
         return (headers, data)
 
     def toJSON(self):
@@ -589,6 +592,7 @@ class TransactionsManager(Manager):
         Gets all transactions
         '''
         headers, data = self.build_request_args()
+
         response = requests.get(self.PAYSTACK_URL + self.__endpoint, headers = headers)
 
         content = response.content
@@ -605,7 +609,7 @@ class TransactionsManager(Manager):
         '''
         Gets transaction with the specified id
         '''
-        headers, data = self.build_request_args()
+        headers, data = self.build_request_args()        
 
         url = self.PAYSTACK_URL + self.__endpoint
         url += '/%s' % (str(id))
