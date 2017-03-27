@@ -332,7 +332,7 @@ class CustomersManager(Manager):
         '''
         Method which returns all registered customers
         '''
-        headers,_ = self.build_request_args()
+        headers, data = self.build_request_args()
 
         response  = requests.get(self.PAYSTACK_URL + self.__endpoint, headers = headers)
 
@@ -357,7 +357,7 @@ class CustomersManager(Manager):
         id : Customer id
 
         '''
-        headers,_ = self.build_request_args()
+        headers, data = self.build_request_args()
         url = "%s%s/%s" % (self.PAYSTACK_URL, self.__endpoint, id)
         response = requests.get(url, headers = headers)
 
@@ -494,7 +494,7 @@ class PlanManager(Manager):
             raise APIConnectionFailedError(message)
 
     def get_plans(self):
-        headers,_ = self.build_request_args()
+        headers, data = self.build_request_args()
         response = requests.get(self.PAYSTACK_URL + self.__endpoint, headers = headers)
 
         content = response.content
@@ -510,7 +510,7 @@ class PlanManager(Manager):
 
     #Implement as class method to return a Plan object
     def get_plan(self, id):
-        headers,_ = self.build_request_args()
+        headers, data = self.build_request_args()
 
         url = "%s%s/%s" % (self.PAYSTACK_URL,self.__endpoint, id)
         response = requests.get(url, headers = headers)
@@ -567,9 +567,9 @@ class TransactionsManager(Manager):
         
     def get_total_transactions(self):
         '''
-        Get total amount gotten from transactions
+        Get total amount recieved from transactions
         '''
-        headers,_ = self.build_request_args()
+        headers, data = self.build_request_args()
         url = self.PAYSTACK_URL + self.__endpoint
         url += '/totals'
         response = requests.get(url, headers = headers)
@@ -588,7 +588,7 @@ class TransactionsManager(Manager):
         '''
         Gets all transactions
         '''
-        headers,_ = self.build_request_args()
+        headers, data = self.build_request_args()
         response = requests.get(self.PAYSTACK_URL + self.__endpoint, headers = headers)
 
         content = response.content
