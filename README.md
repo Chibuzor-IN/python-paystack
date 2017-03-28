@@ -23,6 +23,8 @@ PaystackConfig.PUBLIC_KEY = PAYSTACK_PUBLIC_KEY
 
 Most of the library's functionality lies in the managers.py file which contains the PaymentManager, CustomersManager, PlanManager and the TransactionsManager.
 
+The Manager classes handle every direct interaction with the Paystack API.
+
 Starting and verifying transactions is handled by the PaymentManager which is designed to handle one transaction with a customer.
 When PaymentManager.start_transaction is called, it returns a paystack url which the user is to be redirected to 
 After a transaction is confirmed, the details are saved as member variables of the PaymentManager object . 
