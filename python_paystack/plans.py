@@ -1,30 +1,32 @@
 from forex_python.converter import CurrencyCodes
-from .errors import *
 import jsonpickle
+from .errors import InvalidInstance
 
 class Plan():
     '''
-    Plan class for making payment plans 
+    Plan class for making payment plans
     '''
 
     __interval = None
-    __interval_values = ('hourly', 'daily', 'weekly', 'monthly','annually')    
+    __interval_values = ('hourly', 'daily', 'weekly', 'monthly', 'annually')
     __name = None
-    __amount = None    
+    __amount = None
     __plan_code = None
     __currency = None
     __id = None
     send_sms = True
     send_invoices = True
     description = None
-    
-    def __init__(self, name, interval, amount, currency = 'NGN', plan_code = None, id = None, send_sms = None, send_invoices = None, description = None):        
+
+    def __init__(self, name, interval, amount, currency='NGN', plan_code=None, id=None, send_sms=None, send_invoices=None, description=None):
         #Check if currency supplied is valid
         if not CurrencyCodes().get_symbol(currency.upper()):
             raise ValueError("Invalid currency supplied")
 
         if interval.lower() not in self.__interval_values:
-            raise ValueError("Interval should be one of 'hourly', 'daily', 'weekly', 'monthly','annually' ")
+            raise ValueError("Interval should be one of 'hourly',"
+                             "'daily', 'weekly', 'monthly','annually'"
+                            )
 
         try:
             amount = int(amount)
@@ -68,7 +70,7 @@ class Plan():
         return self.__currency
 
     @classmethod
-    def fromJSON(self, data, pickled = False):
+    def fromJSON(cls, data, pickled=False):
         '''
         Creates and returns a Plan object from data dict given
 
@@ -93,7 +95,7 @@ class Plan():
             send_sms = data['send_sms']
             send_invoices = data['send_invoices']
             description = data['description']
-            
+
             return Plan(name, interval, amount, currency, plan_code, id, send_sms, send_invoices, description)
 
     def toJSON(self):
@@ -101,7 +103,6 @@ class Plan():
         Converts plan object to dict
         '''
         return jsonpickle.encode(self)
-                
+
     def __str__(self):
-        
         return "%s plan" % self.name

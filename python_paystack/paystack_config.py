@@ -1,6 +1,12 @@
-#Paystack settings
+'''
+Paystack settings file.
+Contains PaystackConfig class
+'''
 
 class PaystackConfig():
+    '''
+    PaystackConfig class.    
+    '''
     PAYSTACK_URL = "https://api.paystack.co"
 
     SECRET_KEY = ""
@@ -14,4 +20,3 @@ class PaystackConfig():
 
     def __new__(cls):
         raise TypeError("Can not make instance of class")
-    

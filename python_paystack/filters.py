@@ -3,7 +3,7 @@ class Filter():
     '''
     Filter class for checking through dicts
     '''
-    
+
     @staticmethod
     def find_key_value(key, dataset):
         '''
@@ -13,16 +13,16 @@ class Filter():
         Arguments:
         key : dictionary key to be searched for
         '''
-        
+
         dicts = []
-    
-        if type(dataset) is not dict : 
+
+        if not isinstance(dataset, dict):
             raise TypeError("dataset argument should be a dictionary")
 
         for item in dataset:
-            
-            if type( dataset[item] ) is dict:
-                dicts.append( dataset[item] )
+
+            if isinstance(dataset[item], dict):
+                dicts.append(dataset[item])
                 continue
             if item == key:
                 return (True, dataset[item])
@@ -30,19 +30,19 @@ class Filter():
         for dataset in dicts:
             return Filter.find_key_value(key, dataset)
 
-        return (False,0)
+        return (False, 0)
 
 
     @staticmethod
-    def filter_amount(amount_range : range, dataset, amount_key = 'amount'):
+    def filter_amount(amount_range: range, dataset, amount_key='amount'):
         '''
-        Checks if there is an amount in the amount_range given in the dataset        
+        Checks if there is an amount in the amount_range given in the dataset
         '''
-        if type(dataset) is not dict : 
-                raise TypeError("dataset argument should be a dictionary")
+        if not isinstance(dataset, dict):
+            raise TypeError("dataset argument should be a dictionary")
 
-        if type(amount_range) is not range:
-            raise TypeError("amount_range should be of type 'range' " )
+        if not isinstance(amount_range, range):
+            raise TypeError("amount_range should be of type 'range' ")
 
         status, value = Filter.find_key_value(amount_key, dataset)
 
@@ -51,5 +51,5 @@ class Filter():
                 return True
         else:
             raise AttributeError("'amount_key' key not found in dataset")
-        
+
         return False

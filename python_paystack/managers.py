@@ -14,8 +14,11 @@ class Manager():
     Abstract base class for 'Manager' Classes
     '''
 
-    PAYSTACK_URL = ""
-    SECRET_KEY = ""
+    PAYSTACK_URL = None
+    SECRET_KEY = None
+    LOCAL_COST = None
+    INTL_COST = None
+    PASS_ON_TRANSACTION_COST = None
 
     decoder = json.JSONDecoder()
 
@@ -24,10 +27,17 @@ class Manager():
             raise TypeError("Can not make instance of abstract base class")
 
         if not PaystackConfig.SECRET_KEY or not PaystackConfig.PUBLIC_KEY:
-            raise ValueError("No secret key or public key found, assign values using PaystackConfig.SECRET_KEY = SECRET_KEY and PaystackConfig.PUBLIC_KEY = PUBLIC_KEY")
+            raise ValueError("No secret key or public key found,"
+                             "assign values using PaystackConfig.SECRET_KEY = SECRET_KEY and"
+                             "PaystackConfig.PUBLIC_KEY = PUBLIC_KEY")
 
         self.PAYSTACK_URL = PaystackConfig.PAYSTACK_URL
         self.SECRET_KEY = PaystackConfig.SECRET_KEY
+
+        if type(self) is PaymentManager:
+            self.LOCAL_COST = PaystackConfig.LOCAL_COST
+            self.INTL_COST = PaystackConfig.INTL_COST
+            self.PASS_ON_TRANSACTION_COST = PaystackConfig.PASS_ON_TRANSACTION_COST
 
 
     def get_content_status(self, content):
@@ -54,22 +64,21 @@ class Manager():
         content = self.decoder.decode(content)
         return content
 
-    def build_request_args(self, data = {}):
+    def build_request_args(self, data={}):
         '''
         Method for generating required headers.
         Returns a tuple containing the generated headers and the data in json.
 
-        Arguments : 
+        Arguments :
         data(Dict) : An optional data argument which holds the body of the request.
         '''
-        headers = {
-                        'Authorization' : 'Bearer %s' % self.SECRET_KEY,
-                        'Content-Type' : 'application/json',
-                        'cache-control' : 'no-cache'
-                      }
+        headers = {'Authorization' : 'Bearer %s' % self.SECRET_KEY,
+                   'Content-Type' : 'application/json',
+                   'cache-control' : 'no-cache'
+                  }
 
         data = json.dumps(data)
-        
+
         return (headers, data)
 
     def toJSON(self):
@@ -90,10 +99,6 @@ class PaymentManager(Manager):
     card_locale : Card location for application of paystack charges
     '''
 
-    LOCAL_COST = PaystackConfig.LOCAL_COST
-    INTL_COST = PaystackConfig.INTL_COST
-    PASS_ON_TRANSACTION_COST = PaystackConfig.PASS_ON_TRANSACTION_COST
-
     __amount = None
     __email = None
     __reference = None
@@ -102,7 +107,8 @@ class PaymentManager(Manager):
     __endpoint = '/transaction'
     card_locale = None
 
-    def __init__(self,amount : int, email, reference = '', access_code = '', authorization_url = '', card_locale = 'LOCAL', endpoint  = '/transaction'):
+    def __init__(self, amount: int, email, reference='', access_code='',
+                 authorization_url='', card_locale='LOCAL', endpoint='/transaction'):
         super().__init__(self)
         try:
             amount = int(amount)
@@ -153,22 +159,32 @@ class PaymentManager(Manager):
         locale : Card location (LOCAL or INTERNATIONAL)
         '''
         if self.amount:
+
             if locale not in ('LOCAL', 'INTERNATIONAL'):
-                raise ValueError("Invalid locale, locale should be either 'LOCAL' or 'INTERNATIONAL' ")
+                raise ValueError("Invalid locale, locale should be 'LOCAL' or 'INTERNATIONAL'")
+
             else:
-                locale_cost = {'LOCAL' : self.LOCAL_COST, 'INTERNATIONAL' : self.INTL_COST }
+                locale_cost = {'LOCAL' : self.LOCAL_COST, 'INTERNATIONAL' : self.INTL_COST}
 
                 cost = self.amount / (1 - locale_cost[locale])
+
+                if cost > 250000:
+                    cost = (self.amount + 100)/ (1 - locale_cost[locale])
+
+                paystack_charge = locale_cost[locale] * cost
+                #Paystack_charge is capped at N2000
+                if paystack_charge > 200000:
+                    cost = self.amount + 200000
 
                 return math.ceil(cost)
 
         else:
             raise AttributeError("Amount not set")
 
-    def start_transaction(self, callback_url = '', endpoint = '/initialize', plan_code = None):
+    def start_transaction(self, callback_url='', endpoint='/initialize', plan_code=None):
         '''
         Initializes a paystack transaction.
-        Returns an authorization url which points to a paystack form to verify card details and make the payment.
+        Returns an authorization url which points to a paystack form to verify card details.
 
         Arguments:
         callback_url : URL paystack redirects to after a user enters their card details
@@ -182,7 +198,7 @@ class PaymentManager(Manager):
         amount = self.__amount
         email = self.__email
 
-        data = {'amount' : amount , 'email' : email}
+        data = {'amount' : amount, 'email' : email}
         if plan_code:
             data['plan'] = plan_code
         if callback_url:
@@ -200,7 +216,7 @@ class PaymentManager(Manager):
 
 
         url = self.PAYSTACK_URL + self.__endpoint + endpoint
-        response = requests.post(url, headers = headers, data = data)
+        response = requests.post(url, headers=headers, data=data)
         content = response.content
         content = self.parse_response_content(content)
 
