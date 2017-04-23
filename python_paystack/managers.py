@@ -3,6 +3,7 @@ from .errors import *
 from .customers import Customer
 from .plans import Plan
 from .filters import Filter
+from datetime import datetime
 import requests
 import json
 import jsonpickle
@@ -151,6 +152,27 @@ class PaymentManager(Manager):
     def access_code(self):
         return self.access_code
 
+    def generate_reference_code(self):
+        '''
+        Generates a unique transaction reference code
+        '''
+        date = datetime.now()
+        year = date.year
+        month = str(date.month).zfill(2)
+        day = str(date.day).zfill(2)
+        date_stamp = "%s%s%s" % (year, month, day)
+
+        reference_code = "%s%s" % (date_stamp, hash(self.email))
+
+        time = date.time()
+        hour = time.hour
+        minute = time.minute
+        second = time.second
+
+        reference_code += "%s%s%s" % (hour, minute, second)
+
+        return reference_code
+
     def full_transaction_cost(self, locale):
         '''
         Adds on paystack transaction charges and returns updated cost
@@ -181,15 +203,23 @@ class PaymentManager(Manager):
         else:
             raise AttributeError("Amount not set")
 
-    def start_transaction(self, callback_url='', endpoint='/initialize', plan_code=None):
+    def start_transaction(self, method, callback_url='', metadata={},
+                          plan_code=None, endpoint='/initialize'):
         '''
         Initializes a paystack transaction.
-        Returns an authorization url which points to a paystack form to verify card details.
+        Returns an authorization url which points to a paystack form if the method is standard.
+        Returns a dict containing transaction information if the method is inline or inline embed
 
         Arguments:
+        method : Specifies whether to use paystack inline, standard or inline embed
         callback_url : URL paystack redirects to after a user enters their card details
+        plan_code : Payment plan code
         endpoint : Paystack API endpoint for intializing transactions
         '''
+
+        method = method.upper()
+        if method not in ('STANDARD', 'INLINE', 'INLINE EMBED'):
+            raise ValueError("method argument should be STANDARD, INLINE or INLINE EMBED")
 
 
         if self.PASS_ON_TRANSACTION_COST:
@@ -198,9 +228,16 @@ class PaymentManager(Manager):
         amount = self.__amount
         email = self.__email
 
-        data = {'amount' : amount, 'email' : email}
+        data = {'amount' : amount, 'email' : email, 'reference' : self.generate_reference_code(),
+                'metadata' : metadata}
+
         if plan_code:
             data['plan'] = plan_code
+
+        if method in ('INLINE', 'INLINE EMBED'):
+            data['key'] = PaystackConfig.PUBLIC_KEY
+            return data
+
         if callback_url:
             #Check if callback_url is a valid url
             if validators.url(callback_url):
@@ -213,7 +250,6 @@ class PaymentManager(Manager):
         else:
             #Use callback provided on paystack dashboard
             headers, data = self.build_request_args(data)
-
 
         url = self.PAYSTACK_URL + self.__endpoint + endpoint
         response = requests.post(url, headers=headers, data=data)
@@ -237,7 +273,7 @@ class PaymentManager(Manager):
 
 
 
-    def verify_transaction(self, reference, endpoint = '/verify/'):
+    def verify_transaction(self, reference, endpoint='/verify/'):
         '''
         Verifies a payment using the transaction reference.
 
@@ -248,8 +284,8 @@ class PaymentManager(Manager):
         endpoint += reference
         url = self.PAYSTACK_URL + self.__endpoint + endpoint
 
-        headers,_ = self.build_request_args()
-        response = requests.get(url, headers = headers)
+        headers, _ = self.build_request_args()
+        response = requests.get(url, headers=headers)
         content = response.content
         content = self.parse_response_content(content)
 
@@ -293,11 +329,11 @@ class CustomersManager(Manager):
     '''
     __endpoint = None
 
-    def __init__(self, endpoint = '/customer'):
+    def __init__(self, endpoint='/customer'):
         super().__init__(self)
         self.__endpoint = endpoint
 
-    def create_customer(self, customer : Customer, meta = {}):
+    def create_customer(self, customer: Customer, meta={}):
         '''
         Method for creating a new customer.
 
@@ -329,7 +365,7 @@ class CustomersManager(Manager):
             raise InvalidEmailError
 
 
-        response = requests.post(self.PAYSTACK_URL + self.__endpoint, headers = headers, data = data)
+        response = requests.post(self.PAYSTACK_URL + self.__endpoint, headers=headers, data=data)
 
         content = response.content
         content = self.parse_response_content(content)
@@ -353,39 +389,38 @@ class CustomersManager(Manager):
         '''
         headers, data = self.build_request_args()
 
-        response  = requests.get(self.PAYSTACK_URL + self.__endpoint, headers = headers)
+        response = requests.get(self.PAYSTACK_URL + self.__endpoint, headers=headers)
 
         content = response.content
         content = self.parse_response_content(content)
 
         status, message = self.get_content_status(content)
 
-        if status : 
+        if status:
             return content['data']
 
         else:
             raise APIConnectionFailedError(message)
-        
 
 
     def get_customer(self, id):
         '''
         Method for getting a particular customer with the specified id
 
-        Arguments : 
+        Arguments :
         id : Customer id
 
         '''
         headers, data = self.build_request_args()
         url = "%s%s/%s" % (self.PAYSTACK_URL, self.__endpoint, id)
-        response = requests.get(url, headers = headers)
+        response = requests.get(url, headers=headers)
 
         content = response.content
         content = self.parse_response_content(content)
 
         status, message = self.get_content_status(content)
 
-        if status :
+        if status:
             customer = Customer.fromJSON(content['data'])
             return customer
         else:
@@ -395,31 +430,31 @@ class CustomersManager(Manager):
         '''
         Method for updating an existing customer
 
-        Arguments : 
+        Arguments :
         id : Customer id
-        data : Dict which contains the values to be updated as keys and the updated information as the values
-
+        data : Dict which contains the values to be updated as keys
+                and the updated information as the values
         '''
         headers, data = self.build_request_args(data)
         url = "%s%s/%s" % (self.PAYSTACK_URL, self.__endpoint, id)
 
-        response = requests.put(url, headers = headers, data = data)
-        content = response.content 
+        response = requests.put(url, headers=headers, data=data)
+        content = response.content
         content = self.parse_response_content(content)
 
         status, message = self.get_content_status(content)
         if status:
             return content['data']
         else:
-            raise APIConnectionFailedError(message)        
+            raise APIConnectionFailedError(message)
 
     def set_risk_action(self, risk_action, id):
         '''
         Method for either blacklisting or whitelisting a customer
 
-        Arguments : 
+        Arguments :
         risk_action : (allow or deny)
-        id : Customer id 
+        id : Customer id
 
         '''
 
@@ -433,7 +468,7 @@ class CustomersManager(Manager):
             headers, data = self.build_request_args(data)
             url = "%s%s" % (self.PAYSTACK_URL + self.__endpoint, endpoint)
 
-            response = requests.post(url, headers = headers, data = data)
+            response = requests.post(url, headers=headers, data=data)
 
             content = response.content
             content = self.parse_response_content(content)
@@ -449,7 +484,7 @@ class CustomersManager(Manager):
         '''
         Method to deactivate an existing authorization
 
-        Arguments : 
+        Arguments :
         authorization_code : Code for the transaction to be deactivated
 
         '''
@@ -457,7 +492,7 @@ class CustomersManager(Manager):
         headers, data = self.build_request_args(data)
 
         url = "%s/deactivate_authorization" % (self.PAYSTACK_URL + self.__endpoint)
-        response = requests.post(url, headers = headers, data = data)
+        response = requests.post(url, headers=headers, data=data)
 
         content = response.content
         content = self.parse_response_content(content)
@@ -473,17 +508,17 @@ class CustomersManager(Manager):
 
 
 class PlanManager(Manager):
-    '''   
+    '''
     Plan Manager class
-    '''   
+    '''
 
     __endpoint = '/plan'
 
-    def __init__(self, endpoint = '/plan'):
+    def __init__(self, endpoint='/plan'):
         super().__init__(self)
         self.__endpoint = endpoint
 
-    def create_plan(self, plan : Plan):
+    def create_plan(self, plan: Plan):
         '''
         Method for creating plans
 
@@ -492,7 +527,7 @@ class PlanManager(Manager):
 
         '''
         url = self.PAYSTACK_URL + self.__endpoint
-        
+
         data = {
             'name' : plan.name,
             'interval' : plan.interval,

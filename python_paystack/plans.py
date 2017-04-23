@@ -18,7 +18,8 @@ class Plan():
     send_invoices = True
     description = None
 
-    def __init__(self, name, interval, amount, currency='NGN', plan_code=None, id=None, send_sms=None, send_invoices=None, description=None):
+    def __init__(self, name, interval, amount, currency='NGN', plan_code=None,
+                 id=None, send_sms=None, send_invoices=None, description=None):
         #Check if currency supplied is valid
         if not CurrencyCodes().get_symbol(currency.upper()):
             raise ValueError("Invalid currency supplied")

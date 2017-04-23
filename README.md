@@ -32,18 +32,37 @@ Charging customers with an existing authorization is handled by the Transactions
 
 # Payments
 
-**Starting and verifying a transaction**
+You can initialize transactions using all 3 methods supported by paystack i.e Standard, Inline and Inline Embed.
+Using the standard method to start a transaction will return a paystack url where end users can enter card details.
+Both the inline and inline embed methods return a dictionary of values.
+
+**Starting and verifying a standard transaction**
+
 ```python
 from python_paystack.managers import PaymentManager
 
 payment_manager = PaymentManager(20000, 'test@email.com')
-payment_manager.start_transaction()
-#Starts a transaction and returns a paystack url
+payment_manager.start_transaction('STANDARD')
+#Starts a standard transaction and returns a paystack url
 
 #Payments can be verified using their reference
 payment_manager.verify_transaction(payment_manager.reference)
 
 ``` 
+
+**Starting an inline transaction**
+```python
+payment_manager.start_transaction('INLINE')
+
+```
+
+**Starting an inline embed transaction**
+```python
+payment_manager.start_transaction('INLINE EMBED')
+```
+
+
+
 
 # Customers
 
