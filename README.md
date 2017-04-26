@@ -25,7 +25,7 @@ Most of the library's functionality lies in the managers.py file which contains 
 
 The Manager classes handle every direct interaction with the Paystack API.
 
-# Payments
+# Transactions
 
 You can initialize transactions using all 3 methods supported by paystack i.e Standard, Inline and Inline Embed.
 Both the inline and inline embed methods return a dictionary of values while the standard method returns a Transaction object which contains an authorization url.
