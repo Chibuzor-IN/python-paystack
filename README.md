@@ -21,44 +21,43 @@ PaystackConfig.PUBLIC_KEY = PAYSTACK_PUBLIC_KEY
 
 # Usage
 
-Most of the library's functionality lies in the managers.py file which contains the PaymentManager, CustomersManager, PlanManager and the TransactionsManager.
+Most of the library's functionality lies in the managers.py file which contains the TransactionsManager, CustomersManager, PlanManager and the TransfersManager.
 
 The Manager classes handle every direct interaction with the Paystack API.
-
-Starting and verifying transactions is handled by the PaymentManager which is designed to handle one transaction with a customer.
-When PaymentManager.start_transaction is called, it returns a paystack url which the user is to be redirected to 
-After a transaction is confirmed, the details are saved as member variables of the PaymentManager object . 
-Charging customers with an existing authorization is handled by the TransactionsManager.
 
 # Payments
 
 You can initialize transactions using all 3 methods supported by paystack i.e Standard, Inline and Inline Embed.
-Using the standard method to start a transaction will return a paystack url where end users can enter card details.
-Both the inline and inline embed methods return a dictionary of values.
+Both the inline and inline embed methods return a dictionary of values while the standard method returns a Transaction object which contains an authorization url.
 
 **Starting and verifying a standard transaction**
 
 ```python
-from python_paystack.managers import PaymentManager
+from python_paystack.transactions import Transaction
+from python_paystack.managers import TransactionsManager
 
-payment_manager = PaymentManager(20000, 'test@email.com')
-payment_manager.start_transaction('STANDARD')
-#Starts a standard transaction and returns a paystack url
+transaction = Transaction(2000, 'email@test.com')
+transaction_manager = TransactionsManager()
+transaction = transaction_manager.initialize_transaction('STANDARD', transaction)
+#Starts a standard transaction and returns a transaction object
 
-#Payments can be verified using their reference
-payment_manager.verify_transaction(payment_manager.reference)
+transaction.authorization_url
+#Gives the authorization_url for the transaction
+
+#Transactions can easily be verified like so
+transaction = transaction_manager.verify_transaction(transaction)
 
 ``` 
 
 **Starting an inline transaction**
 ```python
-payment_manager.start_transaction('INLINE')
+transaction_manager.initialize_transaction('INLINE', transaction)
 
 ```
 
 **Starting an inline embed transaction**
 ```python
-payment_manager.start_transaction('INLINE EMBED')
+transaction_manager.initialize_transaction('INLINE EMBED', transaction)
 ```
 
 
@@ -83,9 +82,27 @@ customer_manager.create_customer(customer)
 **Getting existing customers**
 ```python
 customer_manager = CustomersManager()
-customer_manager.get_customers() #Returns a list containing every customer
+customer_manager.get_customers() 
+#Returns a list containing every customer
 
-customer_manager.get_customer(id) #Returns customer with the specified id
+customer_manager.get_customer(id) 
+#Returns customer with the specified id
+```
+
+
+
+# Transfers
+
+**Making a transfer with paystack**
+```python
+from python_paystack.transfers import Transfer
+from python_paystack.managers import TransfersManager
+
+transfer = Transfer(2000, "RCP_123456")
+transfer_manager = TransfersManager()
+transfer = transfer_manager.initiate_transfer(transfer)
+
+
 ```
 
 
