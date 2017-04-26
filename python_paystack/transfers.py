@@ -1,5 +1,5 @@
 '''
-Transfer.py
+transfers.py
 '''
 from forex_python.converter import CurrencyCodes
 from .base import Base
@@ -14,6 +14,7 @@ class Transfer(Base):
     reason = None
     recipient = None
     status = None
+    id = None
     transfer_code = None
     otp = None
 

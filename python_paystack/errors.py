@@ -1,10 +1,14 @@
-#from requests import RequestException, ConnectionError
+'''
+errors.py
+'''
 
 class Error(BaseException):
     pass
 
 class InvalidInstance(Error):
-    
+    '''
+    InvalidInstance class
+    '''
     message = 'Not a valid instance of type : '
     manager = ''
 
@@ -13,9 +17,11 @@ class InvalidInstance(Error):
 
     def __str__(self):
         return '%s %s' % (self.message, self.manager)
-   
 
 class APIConnectionFailedError(Error):
+    '''
+    APIConnectionFailedError class
+    '''
     message = ''
 
     def __init__(self, message):
@@ -25,6 +31,9 @@ class APIConnectionFailedError(Error):
         return self.message
 
 class InvalidEmailError(Error):
+    '''
+    InvalidEmailError class
+    '''
     message = "Invalid email address"
 
     def __str__(self):
@@ -38,8 +47,8 @@ class URLValidationError(Error):
     Attributes:
     message : Error description
     '''
-    
-    message = 'Invalid URL'  
-        
+
+    message = 'Invalid URL'
+
     def __str__(self):
         return self.message

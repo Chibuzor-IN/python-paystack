@@ -1,5 +1,5 @@
 '''
-Plans.py
+plans.py
 '''
 from forex_python.converter import CurrencyCodes
 from .base import Base
@@ -14,14 +14,14 @@ class Plan(Base):
     amount = None
     plan_code = None
     currency = None
-    plan_id = None
+    id = None
     send_sms = True
     send_invoices = True
     description = None
     __interval_values = ('hourly', 'daily', 'weekly', 'monthly', 'annually')
 
     def __init__(self, name, interval, amount, currency='NGN', plan_code=None,
-                 plan_id=None, send_sms=None, send_invoices=None, description=None):
+                 id=None, send_sms=None, send_invoices=None, description=None):
         super().__init__()
         #Check if currency supplied is valid
         if not CurrencyCodes().get_symbol(currency.upper()):
@@ -43,7 +43,7 @@ class Plan(Base):
             self.amount = amount
             self.currency = currency
             self.plan_code = plan_code
-            self.plan_id = plan_id
+            self.id = id
             self.send_sms = send_sms
             self.send_invoices = send_invoices
             self.description = description

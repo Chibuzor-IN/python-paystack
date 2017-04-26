@@ -1,5 +1,5 @@
 '''
-Customers.py
+customers.py
 '''
 
 import validators
@@ -17,11 +17,11 @@ class Customer(Base):
     risk_action = None
     first_name = None
     last_name = None
-    customer_id = None
-    meta = None
+    id = None
+    metadata = None
 
     def __init__(self, email, first_name=None, last_name=None,
-                 phone=None, risk_action=None, customer_id=None, meta=None):
+                 phone=None, risk_action=None, id=None, metadata=None):
         super().__init__()
         if validators.email(email):
             self.email = email
@@ -29,14 +29,14 @@ class Customer(Base):
             self.last_name = last_name
             self.phone = phone
             self.risk_action = risk_action
-            self.customer_id = customer_id            
+            self.id = id
         else:
             raise InvalidEmailError
 
-        if meta and not isinstance(meta, dict):
+        if metadata and not isinstance(metadata, dict):
             raise TypeError("meta argument should be a dict")
         else:
-            self.meta = meta
+            self.metadata = metadata
 
     def __str__(self):
         value = self.email
