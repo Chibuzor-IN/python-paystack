@@ -1,5 +1,4 @@
 class Filter():
-
     '''
     Filter class for checking through dicts
     '''

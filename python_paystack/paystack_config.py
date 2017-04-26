@@ -5,7 +5,7 @@ Contains PaystackConfig class
 
 class PaystackConfig():
     '''
-    PaystackConfig class.    
+    PaystackConfig class.
     '''
     PAYSTACK_URL = "https://api.paystack.co"
 

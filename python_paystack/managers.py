@@ -1,16 +1,24 @@
-from .paystack_config import *
+'''
+Managers.py
+'''
+import requests
+import math
+import json
+from datetime import datetime
+import validators
+from forex_python.converter import CurrencyCodes
+from .paystack_config import PaystackConfig
 from .errors import *
 from .customers import Customer
 from .plans import Plan
+from .transfers import Transfer
 from .filters import Filter
-from datetime import datetime
-import requests
-import json
-import jsonpickle
-import validators
-import math
+from .base import Base
 
-class Manager():
+
+
+
+class Manager(Base):
     '''
     Abstract base class for 'Manager' Classes
     '''
@@ -23,8 +31,9 @@ class Manager():
 
     decoder = json.JSONDecoder()
 
-    def __init__(self, *args, **kwargs):
-        if type(self) is Manager:
+    def __init__(self):
+        super().__init__()
+        if isinstance(self, Manager):
             raise TypeError("Can not make instance of abstract base class")
 
         if not PaystackConfig.SECRET_KEY or not PaystackConfig.PUBLIC_KEY:
@@ -35,7 +44,7 @@ class Manager():
         self.PAYSTACK_URL = PaystackConfig.PAYSTACK_URL
         self.SECRET_KEY = PaystackConfig.SECRET_KEY
 
-        if type(self) is PaymentManager:
+        if isinstance(self, PaymentManager):
             self.LOCAL_COST = PaystackConfig.LOCAL_COST
             self.INTL_COST = PaystackConfig.INTL_COST
             self.PASS_ON_TRANSACTION_COST = PaystackConfig.PASS_ON_TRANSACTION_COST
@@ -49,7 +58,7 @@ class Manager():
         content : Response as a dict
         '''
 
-        if  not type(content) is dict:
+        if  not isinstance(content, dict):
             raise TypeError("Content argument should be a dict")
 
         return (content['status'], content['message'])
@@ -65,7 +74,7 @@ class Manager():
         content = self.decoder.decode(content)
         return content
 
-    def build_request_args(self, data={}):
+    def build_request_args(self, data=None):
         '''
         Method for generating required headers.
         Returns a tuple containing the generated headers and the data in json.
@@ -82,75 +91,46 @@ class Manager():
 
         return (headers, data)
 
-    def toJSON(self):
-        '''
-        Method for serializing an instance of a class
-        '''
-        return jsonpickle.encode(self)
 
 class PaymentManager(Manager):
     '''
     PaymentManager class that handles every part of a transaction
 
     Attributes:
-    __amount : Transaction cost
-    __email : Buyer's email
-    __reference
-    __authorization_url
+    amount : Transaction cost
+    email : Buyer's email
+    reference
+    authorization_url
     card_locale : Card location for application of paystack charges
     '''
 
-    __amount = None
-    __email = None
-    __reference = None
-    __access_code = None
-    __authorization_url = None
+    amount = None
+    email = None
+    reference = None
+    access_code = None
+    authorization_url = None
     __endpoint = '/transaction'
     card_locale = None
 
     def __init__(self, amount: int, email, reference='', access_code='',
-                 authorization_url='', card_locale='LOCAL', endpoint='/transaction'):
+                 authorization_url='', card_locale='LOCAL'):
         super().__init__(self)
         try:
             amount = int(amount)
-        except ValueError as error:
+        except ValueError:
             raise ValueError("Invalid amount. Amount(in kobo) should be an integer")
             #Error message
         else:
             #Check if the provided email is valid
             if validators.email(email):
-                self.__amount = amount
-                self.__email = email
-                self. __reference = reference
-                self.__access_code = access_code
-                self.__authorization_url = authorization_url
+                self.amount = amount
+                self.email = email
+                self. reference = reference
+                self.access_code = access_code
+                self.authorization_url = authorization_url
                 self.card_locale = card_locale
             else:
                 raise InvalidEmailError
-
-
-
-    #Transaction amount property
-    @property
-    def amount(self):
-        return self.__amount
-
-    #Transaction email property
-    @property
-    def email(self):
-        return self.__email
-
-    @property
-    def authorization_url(self):
-        return self.__authorization_url
-
-    @property
-    def reference(self):
-        return self.__reference
-
-    @property
-    def access_code(self):
-        return self.access_code
 
     def generate_reference_code(self):
         '''
@@ -203,7 +183,7 @@ class PaymentManager(Manager):
         else:
             raise AttributeError("Amount not set")
 
-    def start_transaction(self, method, callback_url='', metadata={},
+    def start_transaction(self, method, callback_url='', metadata=None,
                           plan_code=None, endpoint='/initialize'):
         '''
         Initializes a paystack transaction.
@@ -223,10 +203,10 @@ class PaymentManager(Manager):
 
 
         if self.PASS_ON_TRANSACTION_COST:
-            self.__amount = self.full_transaction_cost(self.card_locale)
+            self.amount = self.full_transaction_cost(self.card_locale)
 
-        amount = self.__amount
-        email = self.__email
+        amount = self.amount
+        email = self.email
 
         data = {'amount' : amount, 'email' : email, 'reference' : self.generate_reference_code(),
                 'metadata' : metadata}
@@ -242,14 +222,11 @@ class PaymentManager(Manager):
             #Check if callback_url is a valid url
             if validators.url(callback_url):
                 data['callback_url'] = callback_url
-                headers, data = self.build_request_args(data)
 
             else:
                 raise URLValidationError
 
-        else:
-            #Use callback provided on paystack dashboard
-            headers, data = self.build_request_args(data)
+        headers, data = self.build_request_args(data)
 
         url = self.PAYSTACK_URL + self.__endpoint + endpoint
         response = requests.post(url, headers=headers, data=data)
@@ -262,10 +239,10 @@ class PaymentManager(Manager):
         #status = True for a successful connection
         if status:
             data = content['data']
-            self.__reference = data['reference']
-            self.__access_code = data['access_code']
-            self.__authorization_url = data['authorization_url']
-            return self.__authorization_url
+            self.reference = data['reference']
+            self.access_code = data['access_code']
+            self.authorization_url = data['authorization_url']
+            return self.authorization_url
 
         else:
             #Connection failed
@@ -296,23 +273,6 @@ class PaymentManager(Manager):
         else:
             raise APIConnectionFailedError(message)
 
-    @classmethod
-    def fromJSON(self, data):
-        '''
-        Class method for converting JSON Object to PaymentManager Object
-
-        Arguments:
-        data : JSON serialized PaymentManager object
-        '''
-
-        manager_object = jsonpickle.decode(data)
-
-        if type(manager_object) is PaymentManager:
-            return manager_object
-
-        else:
-            raise InvalidInstance('PaymentManager')
-
 
     def __str__(self):
         return "Payment manager for %s" % (self.email)
@@ -327,39 +287,28 @@ class CustomersManager(Manager):
     __endpoint : Paystack API endpoint for 'customers' actions
 
     '''
-    __endpoint = None
+    __endpoint = '/customer'
 
-    def __init__(self, endpoint='/customer'):
+    def __init__(self):
         super().__init__(self)
-        self.__endpoint = endpoint
 
-    def create_customer(self, customer: Customer, meta={}):
+    def create_customer(self, customer: Customer, meta=None):
         '''
         Method for creating a new customer.
 
         Arguments :
         email  : Customer's email address
-        first_name (optional)
-        last_name (optional)
+        customer : Customer object
         meta : Dict which can contain additional customer information
         '''
 
-        if not type(customer) is Customer:
+        if not isinstance(customer, Customer):
             raise TypeError("customer argument should be an instance of the Customer class")
 
         if validators.email(customer.email):
-            data = {'email' : customer.email}
+            data = customer.to_json(pickled=False)
 
-            if first_name:
-                data['first_name'] = customer.first_name
-
-            if last_name:
-                data['last_name'] = customer.last_name
-
-            if meta:
-                data['metadata'] = meta
-
-            headers, data = self.build_request_args(data)
+            headers, _ = self.build_request_args()
 
         else:
             raise InvalidEmailError
@@ -387,7 +336,7 @@ class CustomersManager(Manager):
         '''
         Method which returns all registered customers
         '''
-        headers, data = self.build_request_args()
+        headers, _ = self.build_request_args()
 
         response = requests.get(self.PAYSTACK_URL + self.__endpoint, headers=headers)
 
@@ -397,7 +346,11 @@ class CustomersManager(Manager):
         status, message = self.get_content_status(content)
 
         if status:
-            return content['data']
+            data = content['data']
+            customers = []
+            for item in data:
+                customer = Customer.from_json(item)
+                customers.append(customer)
 
         else:
             raise APIConnectionFailedError(message)
@@ -421,7 +374,7 @@ class CustomersManager(Manager):
         status, message = self.get_content_status(content)
 
         if status:
-            customer = Customer.fromJSON(content['data'])
+            customer = Customer.from_json(content['data'])
             return customer
         else:
             raise APIConnectionFailedError(message)
@@ -544,7 +497,7 @@ class PlanManager(Manager):
 
         if status:
             return content['data']
-        else:            
+        else:
             raise APIConnectionFailedError(message)
 
     def get_plans(self):
@@ -582,13 +535,15 @@ class PlanManager(Manager):
 
 
 class TransactionsManager(Manager):
-    
+    '''
+    TransactionsManager class
+    '''
     __endpoint = '/transaction'
     def __init__(self, endpoint = '/transaction'):
         super().__init__(self)
         self.__endpoint = endpoint
 
-    def charge_authorization(self, authorization_code, amount, email, plan_code = None):
+    def charge_authorization(self, authorization_code, amount, email, plan_code=None):
         data = {'authorization_code' : authorization_code}
         if plan_code:
             data['plan'] = plan_code
@@ -605,9 +560,9 @@ class TransactionsManager(Manager):
             else:
                 raise InvalidEmailError
 
-        response = requests.post(self.PAYSTACK_URL + self.__endpoint, headers = headers, data = data)         
-        content = response.content              
-        content = self.parse_response_content(content)    
+        response = requests.post(self.PAYSTACK_URL + self.__endpoint, headers=headers, data=data)
+        content = response.content
+        content = self.parse_response_content(content)
 
 
         status, message = self.get_content_status(content)
@@ -617,7 +572,7 @@ class TransactionsManager(Manager):
             return content['data']
         else:
             #Connection failed
-            raise APIConnectionFailedError(message)       
+            raise APIConnectionFailedError(message)
         
     def get_total_transactions(self):
         '''
@@ -644,7 +599,7 @@ class TransactionsManager(Manager):
         '''
         headers, data = self.build_request_args()
 
-        response = requests.get(self.PAYSTACK_URL + self.__endpoint, headers = headers)
+        response = requests.get(self.PAYSTACK_URL + self.__endpoint, headers=headers)
 
         content = response.content
         content = self.parse_response_content(content)
@@ -660,11 +615,11 @@ class TransactionsManager(Manager):
         '''
         Gets transaction with the specified id
         '''
-        headers, data = self.build_request_args()        
+        headers, data = self.build_request_args()
 
         url = self.PAYSTACK_URL + self.__endpoint
         url += '/%s' % (str(id))
-        response = requests.get(url, headers = headers)
+        response = requests.get(url, headers=headers)
 
         content = response.content
         content = self.parse_response_content(content)
@@ -676,8 +631,8 @@ class TransactionsManager(Manager):
         else:
             raise APIConnectionFailedError(message)
 
-    
-    def filter_transactions(self, amount_range : range, transactions):
+
+    def filter_transactions(self, amount_range: range, transactions):
         '''
         Returns all transactions with amounts in the given amount_range
         '''
@@ -687,3 +642,114 @@ class TransactionsManager(Manager):
                 results.append(transaction)
 
         return results
+
+
+class TransfersManager(Manager):
+    '''
+    TransfersManager class
+    '''
+
+    __endpoint = '/transfer'
+    def __init__(self, endpoint='/transfer'):
+        super().__init__(self)
+        self.__endpoint = endpoint
+
+
+    def initiate_transfer(self, transfer: Transfer):
+        '''
+        Method to start a transfer to a bank account.
+        '''
+
+        data = transfer.to_json(pickled=False)
+
+
+        headers, data = self.build_request_args(data)
+
+        url = self.PAYSTACK_URL + self.__endpoint
+        response = requests.post(url, headers=headers, data=data)
+        content = response.content
+        content = self.parse_response_content(content)
+
+
+        status, message = self.get_content_status(content)
+
+        if status:
+            data = content['data']
+            transfer.status = data['status']
+            transfer.transfer_code = data['transfer_code']
+            return transfer
+
+        else:
+            #Connection failed
+            raise APIConnectionFailedError(message)
+
+
+    def get_transfers(self):
+        '''
+        Method to get all paystack transfers
+        '''
+        headers, data = self.build_request_args()
+
+        url = self.PAYSTACK_URL + self.__endpoint
+        response = requests.get(url, headers=headers)
+        content = response.content
+        content = self.parse_response_content(content)
+
+
+        status, message = self.get_content_status(content)
+
+        if status:
+            data = content['data']
+            return data
+
+        else:
+            #Connection failed
+            raise APIConnectionFailedError(message)
+
+    def get_transfer(self, transfer_id):
+        '''
+        Method to get paystack transfer with the specified id
+        '''
+        headers, data = self.build_request_args()
+
+        url = self.PAYSTACK_URL + self.__endpoint
+        url += '/%s' % (transfer_id)
+        response = requests.post(url, headers=headers)
+        content = response.content
+        content = self.parse_response_content(content)
+
+        status, message = self.get_content_status(content)
+
+        if status:
+            data = content['data']
+            return data
+        else:
+            #Connection failed
+            raise APIConnectionFailedError(message)
+
+    def finalize_transfer(self, transfer_id, otp):
+        '''
+        Method for finalizing transfers
+        '''
+        transfer_id = str(transfer_id)
+        otp = str(otp)
+
+        data = {'transfer_code' : transfer_id, 'otp' : otp}
+        headers, data = self.build_request_args(data)
+
+        url = self.PAYSTACK_URL + self.__endpoint
+        url += '/finalize_transfer'
+        response = requests.post(url, headers=headers, data=data)
+        content = response.content
+        content = self.parse_response_content(content)
+
+
+        status, message = self.get_content_status(content)
+
+        if status:
+            data = content['data']
+            return data
+
+        else:
+            #Connection failed
+            raise APIConnectionFailedError(message)
