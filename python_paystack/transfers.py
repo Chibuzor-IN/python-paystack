@@ -18,7 +18,7 @@ class Transfer(Base):
     transfer_code = None
     otp = None
 
-    def __init__(self, source, amount, recipient, reason='', currency='NGN'):
+    def __init__(self, amount, recipient, source = 'balance', reason='', currency='NGN'):
         super().__init__()
         try:
             amount = int(amount)
