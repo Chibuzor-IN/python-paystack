@@ -29,7 +29,7 @@ class Customer(Base):
             self.last_name = last_name
             self.phone = phone
             self.risk_action = risk_action
-            self.id = id
+            # self.id = id
         else:
             raise InvalidEmailError
 

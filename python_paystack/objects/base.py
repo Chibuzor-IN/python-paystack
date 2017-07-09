@@ -4,7 +4,7 @@ base.py
 import json
 import jsonpickle
 from .errors import InvalidInstance
-from .paystack_config import PaystackConfig
+from ..paystack_config import PaystackConfig
 
 class Base():
     '''

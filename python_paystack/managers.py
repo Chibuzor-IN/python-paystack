@@ -5,16 +5,86 @@ Managers.py
 import json
 import requests
 import validators
-from .base import Manager
-from .customers import Customer
-from .errors import APIConnectionFailedError, InvalidEmailError, URLValidationError
-from .filters import Filter
-from .paystack_config import PaystackConfig
-from .plans import Plan
-from .transfers import Transfer
-from .transactions import Transaction
 
-class TransactionsManager(Manager):
+from .objects.base import Manager
+from .objects.customers import Customer
+from .objects.errors import APIConnectionFailedError, URLValidationError
+from .objects.filters import Filter
+from .objects.plans import Plan
+from .objects.transfers import Transfer
+from .objects.transactions import Transaction
+from .objects.subaccounts import SubAccount
+
+from .paystack_config import PaystackConfig
+from .mixins import CreatableMixin, RetrieveableMixin, UpdateableMixin
+
+class Utils(Manager):
+    '''
+
+    '''
+
+    def __init__(self):
+        super().__init__()
+
+
+    def resolve_card_bin(self, card_bin, endpoint='/decision/bin/'):
+        '''
+
+        '''
+        card_bin = card_bin[:6]
+        url = self.PAYSTACK_URL + endpoint + card_bin
+        headers, _ = self.build_request_args()
+
+        response = requests.get(url, headers=headers)
+        content = self.parse_response_content(response.content)
+
+        status, message = self.get_content_status(content)
+        if status:
+            return content['data']
+        
+    def get_banks(self, endpoint='/bank'):
+        '''
+
+        '''
+        url = self.PAYSTACK_URL + endpoint
+        headers, _ = self.build_request_args()
+
+        response = requests.get(url, headers=headers)
+        content = self.parse_response_content(response.content)
+
+        status, message = self.get_content_status(content)
+        if status:
+            return content['data']
+
+    def resolve_bvn(self, bvn, endpoint='/bank/resolve_bvn/'):
+        url = self.PAYSTACK_URL + endpoint + bvn
+        headers, _ = self.build_request_args()
+
+        response = requests.get(url, headers=headers)
+        content = self.parse_response_content(response.content)
+
+        status, message = self.get_content_status(content)
+        if status:
+            return content['data']
+    
+    def resolve_account_number(self, account_number, bank_code, endpoint='/bank/resolve'):
+        '''
+        '''        
+        params = "?account_number=%s&bank_code=%s" % (account_number, bank_code)
+        url = self.PAYSTACK_URL + endpoint + params
+
+        headers, _ = self.build_request_args()
+
+        response = requests.get(url, headers=headers)
+        content = self.parse_response_content(response.content)
+
+        status, message = self.get_content_status(content)
+        if status:
+            return content['data']
+        
+
+
+class TransactionsManager(RetrieveableMixin, Manager):
     '''
     TransactionsManager class that handles every part of a transaction
 
@@ -30,10 +100,13 @@ class TransactionsManager(Manager):
     INTL_COST = PaystackConfig.INTL_COST
     PASS_ON_TRANSACTION_COST = PaystackConfig.PASS_ON_TRANSACTION_COST
 
-    __endpoint = '/transaction'
+    _endpoint = '/transaction'
+    _object_class = Transaction
+
+
     def __init__(self, endpoint='/transaction'):
         super().__init__()
-        self.__endpoint = endpoint
+        self._endpoint = endpoint
 
 
     def initialize_transaction(self, method, transaction: Transaction,
@@ -73,7 +146,7 @@ class TransactionsManager(Manager):
 
         headers, data = self.build_request_args(data)
 
-        url = self.PAYSTACK_URL + self.__endpoint + endpoint
+        url = self.PAYSTACK_URL + self._endpoint + endpoint
         response = requests.post(url, headers=headers, data=data)
         content = response.content
         content = self.parse_response_content(content)
@@ -99,7 +172,7 @@ class TransactionsManager(Manager):
         '''
 
         endpoint += transaction.reference
-        url = self.PAYSTACK_URL + self.__endpoint + endpoint
+        url = self.PAYSTACK_URL + self._endpoint + endpoint
 
         headers, _ = self.build_request_args()
         response = requests.get(url, headers=headers)
@@ -122,7 +195,7 @@ class TransactionsManager(Manager):
         data = transaction.to_json()
         headers, _ = self.build_request_args()
 
-        response = requests.post(self.PAYSTACK_URL + self.__endpoint + endpoint,
+        response = requests.post(self.PAYSTACK_URL + self._endpoint + endpoint,
                                  headers=headers, data=data)
         content = response.content
         content = self.parse_response_content(content)
@@ -141,7 +214,7 @@ class TransactionsManager(Manager):
         Get total amount recieved from transactions
         '''
         headers, _ = self.build_request_args()
-        url = self.PAYSTACK_URL + self.__endpoint
+        url = self.PAYSTACK_URL + self._endpoint
         url += '/totals'
         response = requests.get(url, headers=headers)
 
@@ -154,60 +227,7 @@ class TransactionsManager(Manager):
             return content['data']
         else:
             raise APIConnectionFailedError(message)
-
-    def get_transactions(self):
-        '''
-        Gets all transactions
-        '''
-        headers, _ = self.build_request_args()
-
-        response = requests.get(self.PAYSTACK_URL + self.__endpoint, headers=headers)
-
-        content = response.content
-        content = self.parse_response_content(content)
-
-        status, message = self.get_content_status(content)
-
-        if status:
-            data = content['data']
-            for item in data:
-                data_dict = item
-                data = json.dumps(content['data'])
-                transaction = Transaction.from_json(data)
-                transaction.email = data_dict['customer']['email']
-                if data_dict['authorization']:
-                    transaction.authorization_code = data_dict['authorization']['authorization_code']
-                return transaction
-        else:
-            raise APIConnectionFailedError(message)
-
-    def get_transaction(self, transaction_id):
-        '''
-        Gets transaction with the specified id
-        '''
-        headers, _ = self.build_request_args()
-
-        url = self.PAYSTACK_URL + self.__endpoint
-        url += '/%s' % (str(transaction_id))
-        response = requests.get(url, headers=headers)
-
-        content = response.content
-        content = self.parse_response_content(content)
-
-        status, message = self.get_content_status(content)
-
-        if status:
-            data_dict = content['data']
-            data = json.dumps(data_dict)
-            transaction = Transaction.from_json(data)
-            transaction.email = data_dict['customer']['email']
-            if data_dict['authorization']:
-                transaction.authorization_code = data_dict['authorization']['authorization_code']
-            return transaction
-
-        else:
-            raise APIConnectionFailedError(message)
-
+    
 
     def filter_transactions(self, amount_range: range, transactions):
         '''
@@ -220,136 +240,20 @@ class TransactionsManager(Manager):
 
         return results
 
-class CustomersManager(Manager):
+class CustomersManager(CreatableMixin, RetrieveableMixin, UpdateableMixin, Manager):
     '''
     CustomersManager class which handels actions for Paystack Customers
 
     Attributes :
-    __endpoint : Paystack API endpoint for 'customers' actions
+    _endpoint : Paystack API endpoint for 'customers' actions
 
     '''
-    __endpoint = '/customer'
+    _endpoint = '/customer'
+    _object_class = Customer
 
     def __init__(self):
         super().__init__()
-
-    def create_customer(self, customer: Customer, meta=None):
-        '''
-        Method for creating a new customer.
-
-        Arguments :
-        email  : Customer's email address
-        customer : Customer object
-        meta : Dict which can contain additional customer information
-        '''
-
-        if not isinstance(customer, Customer):
-            raise TypeError("customer argument should be an instance of the Customer class")
-
-        if validators.email(customer.email):
-            data = customer.to_json(pickled=False)
-
-            headers, _ = self.build_request_args()
-
-        else:
-            raise InvalidEmailError
-
-
-        response = requests.post(self.PAYSTACK_URL + self.__endpoint, headers=headers, data=data)
-
-        content = response.content
-        content = self.parse_response_content(content)
-
-        status, message = self.get_content_status(content)
-
-        if status:
-
-            if message == 'Customer created':
-                return content['data']
-            else:
-                raise ValueError("A customer with this email already exists")
-
-        else:
-            raise APIConnectionFailedError(message)
-
-
-    def get_customers(self):
-        '''
-        Method which returns all registered customers
-        '''
-        headers, _ = self.build_request_args()
-
-        response = requests.get(self.PAYSTACK_URL + self.__endpoint, headers=headers)
-
-        content = response.content
-        content = self.parse_response_content(content)
-
-        status, message = self.get_content_status(content)
-
-        if status:
-            data = content['data']
-            meta = content['meta']
-            customers = []
-            for item in data:
-                item = json.dumps(item)
-                customer = Customer.from_json(item)
-                customers.append(customer)
-                return (customers, meta)
-
-        else:
-            raise APIConnectionFailedError(message)
-
-
-    def get_customer(self, customer_id):
-        '''
-        Method for getting a particular customer with the specified customer_id
-
-        Arguments :
-        customer_id : Customer id
-
-        '''
-        headers, _ = self.build_request_args()
-        url = "%s%s/%s" % (self.PAYSTACK_URL, self.__endpoint, customer_id)
-        response = requests.get(url, headers=headers)
-
-        content = response.content
-        content = self.parse_response_content(content)
-
-        status, message = self.get_content_status(content)
-
-        if status:
-            data = json.dumps(content['data'])
-            customer = Customer.from_json(data)
-            return customer
-        else:
-            raise APIConnectionFailedError(message)
-
-    def update_customer(self, customer_id, updated_customer: Customer):
-        '''
-        Method for updating an existing customer
-
-        Arguments :
-        id : Customer id
-        data : Dict which contains the values to be updated as keys
-                and the updated information as the values
-        '''
-        if not isinstance(updated_customer, Customer):
-            raise TypeError("customer argument should be of type 'Customer' ")
-
-        data = updated_customer.to_json(pickled=False)
-        headers, _ = self.build_request_args()
-        url = "%s%s/%s" % (self.PAYSTACK_URL, self.__endpoint, customer_id)
-
-        response = requests.put(url, headers=headers, data=data)
-        content = response.content
-        content = self.parse_response_content(content)
-
-        status, message = self.get_content_status(content)
-        if status:
-            data = json.dumps(content['data'])
-            return Customer.from_json(data)
-        else:
-            raise APIConnectionFailedError(message)
+ 
 
     def set_risk_action(self, risk_action, customer: Customer):
         '''
@@ -372,7 +276,7 @@ class CustomersManager(Manager):
         else:
             data = {'customer' : customer.id, 'risk_action' : risk_action}
             headers, data = self.build_request_args(data)
-            url = "%s%s" % (self.PAYSTACK_URL + self.__endpoint, endpoint)
+            url = "%s%s" % (self.PAYSTACK_URL + self._endpoint, endpoint)
 
             response = requests.post(url, headers=headers, data=data)
 
@@ -398,7 +302,7 @@ class CustomersManager(Manager):
         data = {'authorization_code' : authorization_code}
         headers, data = self.build_request_args(data)
 
-        url = "%s/deactivate_authorization" % (self.PAYSTACK_URL + self.__endpoint)
+        url = "%s/deactivate_authorization" % (self.PAYSTACK_URL + self._endpoint)
         response = requests.post(url, headers=headers, data=data)
 
         content = response.content
@@ -414,197 +318,108 @@ class CustomersManager(Manager):
 
 
 
-class PlanManager(Manager):
+class PlanManager(CreatableMixin, RetrieveableMixin, UpdateableMixin, Manager):
     '''
     Plan Manager class
     '''
 
-    __endpoint = '/plan'
+    _endpoint = '/plan'
+    _object_class = Plan
 
     def __init__(self, endpoint='/plan'):
         super().__init__()
-        self.__endpoint = endpoint
+        self._endpoint = endpoint
 
-    def create_plan(self, plan: Plan):
-        '''
-        Method for creating plans
-
-        Arguments:
-        plan : Plan object
-
-        '''
-        url = self.PAYSTACK_URL + self.__endpoint
-
-        data = plan.to_json()
-
-        headers, _ = self.build_request_args()
-
-        response = requests.post(url, headers=headers, data=data)
-        content = response.content
-        content = self.parse_response_content(content)
-
-        status, message = self.get_content_status(content)
-
-        if status:
-            data = json.dumps(content['data'])
-            return Plan.from_json(data)
-        else:
-            raise APIConnectionFailedError(message)
-
-    def get_plans(self):
-        '''
-        Method for getting plans
-        '''
-        headers, _ = self.build_request_args()
-        response = requests.get(self.PAYSTACK_URL + self.__endpoint, headers=headers)
-
-        content = response.content
-        content = self.parse_response_content(content)
-
-        status, message = self.get_content_status(content)
-
-        if status:
-            data = content['data']
-            meta = content['meta']
-            plans = []
-            for item in data:
-                item = json.dumps(item)
-                plan = Plan.from_json(item)
-                plans.append(plan)
-                return (plans, meta)
-        else:
-            raise APIConnectionFailedError(message)
-
-    def get_plan(self, plan_id):
-        '''
-        Method for getting a plan with the specified id
-        '''
-        headers, _ = self.build_request_args()
-
-        url = "%s%s/%s" % (self.PAYSTACK_URL, self.__endpoint, plan_id)
-        response = requests.get(url, headers=headers)
-
-        content = response.content
-        content = self.parse_response_content(content)
-
-        status, message = self.get_content_status(content)
-
-        if status:
-            data = json.dumps(content['data'])
-            plan = Plan.from_json(data)
-            return plan
-        else:
-            raise APIConnectionFailedError(message)
-
-    def update_plan(self, plan_id, updated_plan: Plan):
-        '''
-        Method for updating existing plan
-        '''
-        if not isinstance(updated_plan, Plan):
-            raise TypeError("updated_plan argument should be of type 'Plan' ")
-
-        data = updated_plan.to_json()
-        headers, _ = self.build_request_args()
-        url = "%s%s/%s" % (self.PAYSTACK_URL, self.__endpoint, plan_id)
-
-        response = requests.put(url, headers=headers, data=data)
-        content = response.content
-        content = self.parse_response_content(content)
-
-        status, message = self.get_content_status(content)
-        if status:
-            data = json.dumps(content['data'])
-            return Plan.from_json(data)
-        else:
-            raise APIConnectionFailedError(message)
+    
 
 
-
-class TransfersManager(Manager):
+class TransfersManager(CreatableMixin, RetrieveableMixin, UpdateableMixin, Manager):
     '''
     TransfersManager class
     '''
 
-    __endpoint = '/transfer'
+    _endpoint = '/transfer'
+    _object_class = Transfer
+
     def __init__(self, endpoint='/transfer'):
         super().__init__()
-        self.__endpoint = endpoint
+        self._endpoint = endpoint
 
 
-    def initiate_transfer(self, transfer: Transfer):
-        '''
-        Method to start a transfer to a bank account.
-        '''
+    # def initiate_transfer(self, transfer: Transfer):
+    #     '''
+    #     Method to start a transfer to a bank account.
+    #     '''
 
-        data = transfer.to_json()
-
-
-        headers, _ = self.build_request_args()
-
-        url = self.PAYSTACK_URL + self.__endpoint
-        response = requests.post(url, headers=headers, data=data)
-        content = response.content
-        content = self.parse_response_content(content)
+    #     data = transfer.to_json()
 
 
-        status, message = self.get_content_status(content)
+    #     headers, _ = self.build_request_args()
 
-        if status:
-            data = json.dumps(content['data'])
-            transfer = Transfer.from_json(data)
-            return transfer
-
-        else:
-            #Connection failed
-            raise APIConnectionFailedError(message)
+    #     url = self.PAYSTACK_URL + self._endpoint
+    #     response = requests.post(url, headers=headers, data=data)
+    #     content = response.content
+    #     content = self.parse_response_content(content)
 
 
-    def get_transfers(self):
-        '''
-        Method to get all paystack transfers
-        '''
-        headers, _ = self.build_request_args()
+    #     status, message = self.get_content_status(content)
 
-        url = self.PAYSTACK_URL + self.__endpoint
-        response = requests.get(url, headers=headers)
-        content = response.content
-        content = self.parse_response_content(content)
+    #     if status:
+    #         data = json.dumps(content['data'])
+    #         transfer = Transfer.from_json(data)
+    #         return transfer
 
-        status, message = self.get_content_status(content)
+    #     else:
+    #         #Connection failed
+    #         raise APIConnectionFailedError(message)
 
-        if status:
-            data = content['data']
-            transfers = []
-            for item in data:
-                item = json.dumps(item)
-                transfers.append(Transfer.from_json(item))
 
-            return transfers
+    # def get_transfers(self):
+    #     '''
+    #     Method to get all paystack transfers
+    #     '''
+    #     headers, _ = self.build_request_args()
 
-        else:
-            #Connection failed
-            raise APIConnectionFailedError(message)
+    #     url = self.PAYSTACK_URL + self._endpoint
+    #     response = requests.get(url, headers=headers)
+    #     content = response.content
+    #     content = self.parse_response_content(content)
 
-    def get_transfer(self, transfer_id):
-        '''
-        Method to get paystack transfer with the specified id
-        '''
-        headers, data = self.build_request_args()
+    #     status, message = self.get_content_status(content)
 
-        url = self.PAYSTACK_URL + self.__endpoint
-        url += '/%s' % (transfer_id)
-        response = requests.post(url, headers=headers)
-        content = response.content
-        content = self.parse_response_content(content)
+    #     if status:
+    #         data = content['data']
+    #         transfers = []
+    #         for item in data:
+    #             item = json.dumps(item)
+    #             transfers.append(Transfer.from_json(item))
 
-        status, message = self.get_content_status(content)
+    #         return transfers
 
-        if status:
-            data = json.dumps(content['data'])
-            return Transfer.from_json(data)
-        else:
-            #Connection failed
-            raise APIConnectionFailedError(message)
+    #     else:
+    #         #Connection failed
+    #         raise APIConnectionFailedError(message)
+
+    # def get_transfer(self, transfer_id):
+    #     '''
+    #     Method to get paystack transfer with the specified id
+    #     '''
+    #     headers, data = self.build_request_args()
+
+    #     url = self.PAYSTACK_URL + self._endpoint
+    #     url += '/%s' % (transfer_id)
+    #     response = requests.post(url, headers=headers)
+    #     content = response.content
+    #     content = self.parse_response_content(content)
+
+    #     status, message = self.get_content_status(content)
+
+    #     if status:
+    #         data = json.dumps(content['data'])
+    #         return Transfer.from_json(data)
+    #     else:
+    #         #Connection failed
+    #         raise APIConnectionFailedError(message)
 
     def finalize_transfer(self, transfer_id, otp):
         '''
@@ -616,7 +431,7 @@ class TransfersManager(Manager):
         data = {'transfer_code' : transfer_id, 'otp' : otp}
         headers, data = self.build_request_args(data)
 
-        url = self.PAYSTACK_URL + self.__endpoint
+        url = self.PAYSTACK_URL + self._endpoint
         url += '/finalize_transfer'
         response = requests.post(url, headers=headers, data=data)
         content = response.content
@@ -632,3 +447,18 @@ class TransfersManager(Manager):
         else:
             #Connection failed
             raise APIConnectionFailedError(message)
+
+
+
+
+class SubAccountManager(CreatableMixin, RetrieveableMixin, UpdateableMixin, Manager):
+    '''
+
+    '''
+    _endpoint = None
+    _object_class = SubAccount
+
+    def __init__(self, endpoint='/subaccount'):
+        super().__init__()
+        self._endpoint = endpoint
+
