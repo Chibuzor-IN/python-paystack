@@ -82,10 +82,10 @@ customer_manager.create_customer(customer)
 **Getting existing customers**
 ```python
 customer_manager = CustomersManager()
-customer_manager.get_customers() 
+customer_manager.get_all() 
 #Returns a list containing every customer
 
-customer_manager.get_customer(id) 
+customer_manager.get(id) 
 #Returns customer with the specified id
 ```
 
@@ -100,7 +100,7 @@ from python_paystack.managers import TransfersManager
 
 transfer = Transfer(2000, "RCP_123456")
 transfer_manager = TransfersManager()
-transfer = transfer_manager.initiate_transfer(transfer)
+transfer = transfer_manager.create(transfer)
 
 
 ```
