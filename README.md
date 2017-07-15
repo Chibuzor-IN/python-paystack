@@ -76,7 +76,7 @@ from python_paystack.customers import Customer
 
 customer = Customer('test@email.com')
 customer_manager = CustomersManager()
-customer_manager.create_customer(customer)
+customer_manager.create(customer)
 ```
 
 **Getting existing customers**
