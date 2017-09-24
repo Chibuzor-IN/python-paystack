@@ -33,7 +33,7 @@ Both the inline and inline embed methods return a dictionary of values while the
 **Starting and verifying a standard transaction**
 
 ```python
-from python_paystack.transactions import Transaction
+from python_paystack.objects.transactions import Transaction
 from python_paystack.managers import TransactionsManager
 
 transaction = Transaction(2000, 'email@test.com')
@@ -72,7 +72,7 @@ All the customer information to be sent to paystack is taken from the Customer o
 Misc. data can also be sent using the meta argument.
 ```python
 from python_paystack.managers import CustomersManager
-from python_paystack.customers import Customer
+from python_paystack.objects.customers import Customer
 
 customer = Customer('test@email.com')
 customer_manager = CustomersManager()
@@ -95,7 +95,7 @@ customer_manager.get(id)
 
 **Making a transfer with paystack**
 ```python
-from python_paystack.transfers import Transfer
+from python_paystack.objects.transfers import Transfer
 from python_paystack.managers import TransfersManager
 
 transfer = Transfer(2000, "RCP_123456")
