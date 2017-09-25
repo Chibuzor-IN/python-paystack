@@ -1,7 +1,7 @@
 '''
 transactions.py
 '''
-import math
+import math, uuid
 from datetime import datetime
 import validators
 from .base import Base
@@ -39,22 +39,7 @@ class Transaction(Base):
         '''
         Generates a unique transaction reference code
         '''
-        date = datetime.now()
-        year = date.year
-        month = str(date.month).zfill(2)
-        day = str(date.day).zfill(2)
-        date_stamp = "%s%s%s" % (year, month, day)
-
-        reference_code = "%s%s" % (date_stamp, hash(self.email))
-
-        time = date.time()
-        hour = time.hour
-        minute = time.minute
-        second = time.second
-
-        reference_code += "%s%s%s" % (hour, minute, second)
-
-        return reference_code
+        return uuid.uuid4()
 
     def full_transaction_cost(self, locale, local_cost, intl_cost):
         '''
