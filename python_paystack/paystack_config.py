@@ -3,15 +3,17 @@ Paystack settings file.
 Contains PaystackConfig class
 '''
 
+import os
+
 class PaystackConfig():
     '''
     PaystackConfig class.
     '''
     PAYSTACK_URL = "https://api.paystack.co"
 
-    SECRET_KEY = ""
+    SECRET_KEY = os.environ['PAYSTACK_SECRET_KEY']
 
-    PUBLIC_KEY = ""
+    PUBLIC_KEY = os.environ['PAYSTACK_PUBLIC_KEY']
 
     PASS_ON_TRANSACTION_COST = True
 
