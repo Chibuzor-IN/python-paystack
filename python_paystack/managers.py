@@ -163,7 +163,7 @@ class TransactionsManager(RetrieveableMixin, Manager):
             #Connection failed
             raise APIConnectionFailedError(message)
 
-    def verify_transaction(self, transaction: Transaction, endpoint='/verify/'):
+    def verify_transaction(self, transaction_reference : str, endpoint='/verify/'):
         '''
         Verifies a payment using the transaction reference.
 
@@ -171,7 +171,7 @@ class TransactionsManager(RetrieveableMixin, Manager):
         endpoint : Paystack API endpoint for verifying transactions
         '''
 
-        endpoint += transaction.reference
+        endpoint += transaction_reference
         url = self.PAYSTACK_URL + self._endpoint + endpoint
 
         headers, _ = self.build_request_args()
