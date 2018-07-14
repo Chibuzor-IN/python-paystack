@@ -208,6 +208,23 @@ class TransactionsManager(RetrieveableMixin, Manager):
         else:
             #Connection failed
             raise APIConnectionFailedError(message)
+    
+    def get_transactions(self,filter=None):
+        '''
+        Returns all transactions with the option of filtering by the transation status
+        Transaction statuses include : 'failed', 'success', 'abandoned'
+        '''
+        url = self.PAYSTACK_URL + self._'endpoint
+        if filter:
+            url += '/?status={}'.format(filter)
+        
+        config = PaystackConfig()
+        headers = {
+            'Authorization':'Bearer '+config.SECRET_KEY
+        }        
+        r = requests.get(url,headers=headers)
+
+        return r.json()
 
     def get_total_transactions(self):
         '''
@@ -239,6 +256,7 @@ class TransactionsManager(RetrieveableMixin, Manager):
                 results.append(transaction)
 
         return results
+    
 
 class CustomersManager(CreatableMixin, RetrieveableMixin, UpdateableMixin, Manager):
     '''
