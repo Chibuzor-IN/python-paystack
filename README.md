@@ -9,7 +9,7 @@ pip install python-paystack
 # Configuration
 
 To get started, import PaystackConfig from python_paystack.paystack_config and instantiate your public and secret keys.
-Other settings which are instatiated by defualt include the paystack api url (PAYSTACK_URL), PASS_ON_TRANSACTION_COST which determines if the cost per transaction is passed to the end user, LOCAL_COST and INTL_COST are the paystack charges for local and international cards respectively.
+Other settings which are instatiated by default include the paystack api url (PAYSTACK_URL), PASS_ON_TRANSACTION_COST which determines if the cost per transaction is passed to the end user, LOCAL_COST and INTL_COST are the paystack charges for local and international cards respectively.
 
 ```python
 from python_paystack.paystack_config import PaystackConfig
