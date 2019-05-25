@@ -214,7 +214,7 @@ class TransactionsManager(RetrieveableMixin, Manager):
         Returns all transactions with the option of filtering by the transation status
         Transaction statuses include : 'failed', 'success', 'abandoned'
         '''
-        url = self.PAYSTACK_URL + self._'endpoint
+        url = self.PAYSTACK_URL + self._endpoint
         if filter:
             url += '/?status={}'.format(filter)
         
